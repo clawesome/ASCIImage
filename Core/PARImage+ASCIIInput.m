@@ -189,22 +189,30 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
 {
     static dispatch_once_t onceToken;
     static NSCharacterSet *nonWhitespaceCharacters = nil;
+    
+    NSMutableCharacterSet *nonWhiteSpaceAndShifts = [NSMutableCharacterSet characterSetWithCharactersInString:@"+-"];
+    [nonWhiteSpaceAndShifts formUnionWithCharacterSet:[NSCharacterSet whitespaceCharacterSet]];
+    
     dispatch_once(&onceToken, ^
       {
-          nonWhitespaceCharacters = [[NSCharacterSet whitespaceCharacterSet] invertedSet];
+          nonWhitespaceCharacters = [nonWhiteSpaceAndShifts invertedSet];
       });
     return nonWhitespaceCharacters;
 }
 
-+ (NSArray *)shapesFromNumbersInStrictASCIIRepresentation:(NSArray *)representation
++ (NSArray *)shapesFromNumbersInStrictASCIIRepresentation:(NSArray *)rep
 {
+    
     // canvas size
+    NSArray *representation = [self strictASCIIRepresentationFromLenientASCIIRepresentation:rep];
+    
     NSUInteger countRows = representation.count;
     if (countRows == 0)
         return @[];
     NSUInteger countCols = [representation[0] length];
     NSUInteger countPixels = countRows * countCols;
     NSString *asciiString = [representation componentsJoinedByString:@""];
+    NSString *fullString = [rep componentsJoinedByString:@""];
     
     // collect positions of the different marks in the shape
     NSCharacterSet *markCharacters = [self markCharactersForASCIIShape];
@@ -213,6 +221,11 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
     while (markRange.location != NSNotFound)
     {
         NSString *mark = [asciiString substringWithRange:markRange];
+        NSRange shiftRange = NSMakeRange((markRange.location*2), markRange.length);
+        NSRange reverseShiftRange = NSMakeRange((markRange.location*2)+2, markRange.length);
+        NSString *shiftMark = [fullString substringWithRange:shiftRange];
+        NSString *reverseShiftMark = [fullString substringWithRange:reverseShiftRange];
+        
         NSMutableArray *positions = markPositions[mark];
         if (!positions)
         {
@@ -222,6 +235,11 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
         
         // new position: note that the Y need to be inverted to get the coordinate rights
         CGFloat x = markRange.location % countCols;
+        if([shiftMark isEqualToString:@"+"]){
+            x++;
+        } else if([reverseShiftMark isEqualToString:@"-"]) {
+            x--;
+        }
         CGFloat y = countRows - 1 - markRange.location / countCols;
         [positions addObject:PARValueFromPoint(CGPointMake(x,y))];
         
@@ -283,7 +301,7 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
 {
     // ASCII --> shapes
     NSArray *strictRep = [self strictASCIIRepresentationFromLenientASCIIRepresentation:rep];
-    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:strictRep];
+    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:rep];
     
     // prepare output
     NSUInteger countRows = strictRep.count;
@@ -414,7 +432,7 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
 {
     // ASCII --> shapes
     NSArray *strictRep = [self strictASCIIRepresentationFromLenientASCIIRepresentation:rep];
-    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:strictRep];
+    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:rep];
     
     // image size in points
     NSUInteger countRows = strictRep.count;
@@ -504,7 +522,7 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
 {
     // ASCII --> shapes
     NSArray *strictRep = [self strictASCIIRepresentationFromLenientASCIIRepresentation:rep];
-    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:strictRep];
+    NSArray *shapes = [self shapesFromNumbersInStrictASCIIRepresentation:rep];
     
     // image size
     NSUInteger countRows = strictRep.count;
