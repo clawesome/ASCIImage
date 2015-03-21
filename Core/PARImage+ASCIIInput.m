@@ -222,9 +222,7 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
     {
         NSString *mark = [asciiString substringWithRange:markRange];
         NSRange shiftRange = NSMakeRange((markRange.location*2), markRange.length);
-        NSRange reverseShiftRange = NSMakeRange((markRange.location*2)+2, markRange.length);
         NSString *shiftMark = [fullString substringWithRange:shiftRange];
-        NSString *reverseShiftMark = [fullString substringWithRange:reverseShiftRange];
         
         NSMutableArray *positions = markPositions[mark];
         if (!positions)
@@ -237,7 +235,7 @@ NSString * const ASCIIContextShouldAntialias    = @"ASCIIContextShouldAntialias"
         CGFloat x = markRange.location % countCols;
         if([shiftMark isEqualToString:@"+"]){
             x++;
-        } else if([reverseShiftMark isEqualToString:@"-"]) {
+        } else if([shiftMark isEqualToString:@"-"]) {
             x--;
         }
         CGFloat y = countRows - 1 - markRange.location / countCols;
